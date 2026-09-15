@@ -13,35 +13,33 @@ logic [WIDTHx-1:0] flow_data_time_structure_OPA [SIZE-1:0];
 logic [WIDTHx-1:0] flow_data_time_structure_OPB [SIZE-1:0];
 logic [SIZE-1:0] counter;
 logic [SIZE-1:0] counter_next;
-(* ram_style = "distributed" *)
-logic [WIDTHx-1:0] opa_out_data_reg  [SIZE-1:0][SIZE-1:0];
-(* ram_style = "distributed" *)
-logic [WIDTHx-1:0] opb_out_data_reg  [SIZE-1:0][SIZE-1:0];
 
 
-
-assign counter_next=ena_shift ? counter+1: 0;
+logic ena_t;
+assign counter_next=counter+1;
 always_ff@(posedge clock,negedge rst_n_async)begin
     if(!rst_n_async)begin
         counter <= 0;
         flow_data_time_structure_OPA <= '{default:0};
         flow_data_time_structure_OPB <= '{default:0};
-        opa_out_data_reg <= '{default:0};
-        opb_out_data_reg <= '{default:0};
 
+        ena_t <= 0;
     end else begin
-        opa_out_data_reg <= opa_out_data;
-        opb_out_data_reg <= opb_out_data;
+
+        
+        ena_t <= ena_shift;
+        if(ena_shift) counter <= counter_next;
+        else counter <= 0;
+        
         if(counter < SIZE)begin
-            counter <=counter+1;
             for(int l =0; l < SIZE; l++)begin
-                flow_data_time_structure_OPA[l] <= counter >SIZE-1 ?'{default:0}: opa_out_data_reg[l][counter];//counter > SIZE-1 ? 0 : A1[l][counter];
+                flow_data_time_structure_OPA[l] <= opa_out_data[counter][l];//counter > SIZE-1 ? 0 : A1[l][counter];
+                flow_data_time_structure_OPB[l] <= opb_out_data[counter][l];//counter > SIZE-1 ? 0 : A2_t[l][counter];
+                /*
+                                flow_data_time_structure_OPA[l] <= counter >SIZE-1 ?'{default:0}: opa_out_data_reg[l][counter];//counter > SIZE-1 ? 0 : A1[l][counter];
                 flow_data_time_structure_OPB[l] <= counter >SIZE-1 ?'{default:0}: opb_out_data_reg[counter][l];//counter > SIZE-1 ? 0 : A2_t[l][counter];
+                */
             end
-        end else begin 
-            counter <= 0;
-            flow_data_time_structure_OPA <= '{default:0};
-            flow_data_time_structure_OPB <= '{default:0};
         end
     end
 end

@@ -38,7 +38,7 @@ logic  [23:0]dout_mem[LENGTH-1:0];
 
 initial begin
   clock = 1;
-  $readmemh("/home/valmyrsilva07/Área de Trabalho/SystolicCore/tb/mem8x8.mem",dout_mem);
+  $readmemh("/run/media/xmen/3dae8433-5866-41d4-a50e-ed4d30bb9f05/home/valmyrsilva07/Área de Trabalho/SystolicCore/tb/mem8x8.mem",dout_mem);
 
   rst_n_async =1;
   #1rst_n_async= 0;

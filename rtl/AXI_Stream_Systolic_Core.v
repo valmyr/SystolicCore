@@ -55,6 +55,16 @@ SystolicCoreTop #(
   
 );
 
+ila_3 your_instance_name (
+	.clk(clock), // input wire clk
 
+
+	.probe0(s_axis_tdata), // input wire [127:0]  probe0  
+	.probe1(m_axis_tdata), // input wire [127:0]  probe1 
+	.probe2(s_axis_tvalid), // input wire [0:0]  probe2 
+	.probe3(s_axis_tready), // input wire [0:0]  probe3 
+	.probe4(m_axis_tvalid), // input wire [0:0]  probe4 
+	.probe5(m_axis_tready) // input wire [0:0]  probe5
+);
 
 endmodule

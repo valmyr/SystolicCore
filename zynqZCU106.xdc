@@ -250,10 +250,5 @@ set_output_delay 0 [get_ports {sfp0_tx_disable_b sfp1_tx_disable_b}]
 #set_property -dict {LOC AL20 IOSTANDARD POD12_DCI      } [get_ports {ddr4_dm_dbi_n[6]}] ;# U2.E7 DML_B/DBIL_B
 #set_property -dict {LOC AP19 IOSTANDARD POD12_DCI      } [get_ports {ddr4_dm_dbi_n[7]}] ;# U2.E2 DMU_B/DBIU_B
 
-set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
-set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
-set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
-connect_debug_port dbg_hub/clk_125mhz [get_nets clock_BUFG]
-#set_property USE_DSP yes [get_cells inst_multiplicador]
 
-set_property use_dsp48 yes [get_nets sum*]
+#set_property USE_DSP yes [get_cells inst_multiplicador]

@@ -22,10 +22,10 @@ module systolicMatrixMultiply#(
     output logic                    ready_o                                , //Pronto para receber um dado valido na entrada
     output logic                    read_done                              ,           
    (*dont_touch = "true"*)  output logic [WIDTH-1:0]        output_produc_a_b [SIZE-1:0][SIZE-1:0],
-   output logic ena_mac
+   output logic ena_shift_data
 );
 
-
+logic ena_mac;
 logic [$clog2(2*SIZE) :0]       counter_mult        , next_counter_mult                 ;
 logic [$clog2(2*SIZE) :0]       counter_transfer_m  , next_counter_transfer_m           ;
 (* ram_style = "distributed" *)
@@ -40,7 +40,7 @@ logic [WIDTHx-1:0]                      b_vec           [SIZE-1:0][SIZE-1:0]    
 logic [WIDTHx-1:0]                 a_load[SIZE-1:0]                                          ;
 (*dont_touch = "true"*) 
 logic [WIDTHx-1:0]                 b_load[SIZE-1:0]                                          ;
-logic                                    next_ena_mac                           ;
+logic                                    next_ena_mac,ena_shift_data_next                           ;
 
 (*dont_touch = "true"*) 
 enum {IDLE, LOAD_MULTI_MATRIX ,MULTI_MATRIX, DONE} currentStateSystolicControlUnit, nextStateSystolicControlUnit;
@@ -89,6 +89,7 @@ always_ff@(posedge clock, negedge rst_n_async)begin
         currentStateSystolicControlUnit <= nextStateSystolicControlUnit                                        ;
         counter_mult                    <= next_counter_mult                                                   ; 
         ena_mac                         <= next_ena_mac                                                        ;
+        ena_shift_data <= ena_shift_data_next;
         a_load                          <= currentStateSystolicControlUnit == LOAD_MULTI_MATRIX ? a_input: '{default:0}   ;
         b_load                          <= currentStateSystolicControlUnit == LOAD_MULTI_MATRIX ? b_input: '{default:0}   ;
     end
@@ -103,6 +104,7 @@ always_comb begin
             next_ena_mac                 = 0                                                                    ;
             next_counter_transfer_m      = 0                                                                    ;
             read_done                    = 1                                                                    ;
+            ena_shift_data_next  = 1;
         end
        LOAD_MULTI_MATRIX:begin
             ready_o                      = 0;
@@ -112,6 +114,7 @@ always_comb begin
             next_counter_mult            = 0                                                                    ;
             next_ena_mac                 = 1                                                                    ;     
             read_done                    = 0                                                                    ;
+            ena_shift_data_next               =1;
         end
         MULTI_MATRIX:begin
             ready_o                      = 0                                                                   ;
@@ -121,7 +124,7 @@ always_comb begin
             next_counter_mult            = counter_mult + 1'b1                                                 ;
             next_ena_mac                 = (counter_mult < SIZE) ? 1:0                                         ;
             read_done                    = 1                                                                   ;
-
+            ena_shift_data_next = 1;
             
         end
         DONE:begin
@@ -132,6 +135,7 @@ always_comb begin
             next_counter_transfer_m      = 0                                                                   ;                  
             next_ena_mac                 = 0                                                                   ;
             read_done                    = 1                                                                   ;
+            ena_shift_data_next = 0;
         end
         default:begin
             nextStateSystolicControlUnit = IDLE;
@@ -141,6 +145,7 @@ always_comb begin
             next_ena_mac                 = 0                                                                    ;
             next_counter_transfer_m      = 0                                                                    ;
             read_done                    = 1                                                                    ;
+            ena_shift_data_next = 0;
         end
     endcase
 end

@@ -33,7 +33,8 @@ module systolicControlUnitTop#(parameter SIZE=32,WINDOW =6,WIDTH=8,BYTESIZES =25
     output logic sampling_pipeline_stage_2_img2row  ,
     output logic sampling_pipeline_stage_3_systolic ,
     output logic sampling_pipeline_stage_4_send2host,
-    output logic [BYTESIZES-1:0]serial2mem_ops_in_data
+    output logic [BYTESIZES-1:0]serial2mem_ops_in_data,
+    output logic debug_handsheak
 
 );
 
@@ -91,7 +92,8 @@ always_ff@(posedge clock, negedge rst_n_async)begin
         frame_start[31:24] <= (uart_valid_rx_in && uart_ready_rx)  ? frame_start[23:16]:frame_start[31:24];
     end
 end
-
+ 
+assign debug_handsheak = handsheak;
 
 
 always_ff@(posedge clock, negedge rst_n_async)begin
@@ -116,7 +118,8 @@ always_comb case(fsm_unit_control)
        
         starting_frame_identified     = 1;
         s_axis_tlast =0;
-        if(uart_valid_rx_in && uart_ready_rx && {frame_start[15:0],uart_data_rx_out} == 16'hffff) begin
+        if(uart_valid_rx_in && uart_ready_rx && {frame_start[15:0],uart_data_rx_out} == 16'hffff) begin //Verifcado
+        //if(uart_valid_rx_in && uart_ready_rx && frame_start[15:0] == 16'hffff) begin // Dump
         //if(uart_valid_rx_in && uart_ready_rx && frame_start[15:0] == 16'hffff) begin
                 fsm_unit_control_next    =WRITE_MEM;
                 serial2mem_opb_valid_i   =0;
@@ -162,7 +165,7 @@ always_comb case(fsm_unit_control)
         syst_rready_i                 = serial2mem_opa_rvalid_o && serial2mem_opb_rvalid_o;  
 
 
-        fsm_unit_control_next         = serial2mem_opa_rvalid_o && serial2mem_opb_rvalid_o &&  counter_out_opA >= 3*SIZE-1 +5?  IMG2ROW : WRITE_MEM;
+        fsm_unit_control_next         = serial2mem_opa_rvalid_o && serial2mem_opb_rvalid_o &&  counter_out_opA >= 3*SIZE-1+5?  IMG2ROW : WRITE_MEM;
         uart_valid_tx_in              = 0;
         starting_frame_identified     = 1;
         s_axis_tlast                  = serial2mem_opa_rvalid_o ? 1 : 0;
@@ -206,7 +209,7 @@ always_comb case(fsm_unit_control)
         ena_mem_read_systolic_counter = 0;
         ena_send2host_counter         = 0;
 
-        fsm_unit_control_next         = u_im2row_result_rvalid_o && counter_out_img2row >=3*SIZE-1+5 ?SYSTOLIC_READ_MEM : IMG2ROW;
+        fsm_unit_control_next         = u_im2row_result_rvalid_o && counter_out_img2row >=3*SIZE-1+5?SYSTOLIC_READ_MEM : IMG2ROW;
 
 
         
@@ -388,6 +391,26 @@ assign sampling_pipeline_stage_1_mem_write = sampling_pipeline_stage_1_mem_write
 assign sampling_pipeline_stage_2_img2row = sampling_pipeline_stage_2_img2row_reg;
 assign sampling_pipeline_stage_3_systolic = sampling_pipeline_stage_3_systolic_reg;
 assign sampling_pipeline_stage_4_send2host = sampling_pipeline_stage_4_send2host_reg;
+
+
+logic capture_start_fram;
+
+assign capture_start_fram =uart_valid_rx_in && uart_ready_rx && {frame_start[15:0],uart_data_rx_out} == 16'hffff;
+
+ila_2 your_instance_name (
+	.clk(clock), // input wire clk
+
+//fsm_unit_control
+	.probe0(frame_start), // input wire [7:0]  probe0  
+	.probe1(fsm_unit_control), // input wire [7:0]  probe1 
+	.probe2(handsheak), // input wire [7:0]  probe2 
+	.probe3(sampling_pipeline_stage_1_mem_write), // input wire [7:0]  probe3
+	.probe4(sampling_pipeline_stage_2_img2row), // input wire [7:0]  probe3
+	.probe5(sampling_pipeline_stage_3_systolic), // input wire [7:0]  probe3
+	.probe6(sampling_pipeline_stage_4_send2host), // input wire [7:0]  probe3
+	.probe7(capture_start_fram), // input wire [7:0]  probe3
+	.probe8(axi_debug) // input wire [7:0]  probe3
+);
 
 
 endmodule

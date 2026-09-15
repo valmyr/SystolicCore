@@ -141,7 +141,8 @@ logic                   mem2serial_m_axis_tlast                                 
 //Pinout SampleHatePC
 logic ref_clock_in_clock                                                                                        ;
 logic ref_clock_rst_n_async                                                                                     ;
-logic ref_clock_out_clock_ref                                                                                   ;
+logic ref_clock_out_clock_ref     ;
+logic debug_handsheak;                                                                              
 //---------------------------------------------------------------------------------------------------
 
 
@@ -266,7 +267,7 @@ systolicMatrixMultiply  #(.WIDTH(WIDTH),.WIDTHx(WIDTHx),.SIZE(SIZE)) u_systolic_
     .clock                      (syst_clock                                 )                  ,
     .output_produc_a_b          (syst_output_produc_a_b                     )                  ,
     .read_done                  (syst_read_done                             )                  ,
-    .ena_mac                    (syst_ena_mac                               )
+    .ena_shift_data             (syst_ena_mac                               )
 );
 (*dont_touch = "true"*) 
 serial2mem #(.WIDTH(WIDTHx), .SIZE(SIZE_WINDOW))u_serial2mem_opa_unit(
@@ -349,8 +350,9 @@ systolicControlUnitTop #(.SIZE(SIZE),.WIDTH(WIDTH),.BYTESIZES(BYTESIZES))u_systo
     .sampling_pipeline_stage_2_img2row  (sampling_pipeline_stage_2_img2row              )                ,
     .sampling_pipeline_stage_3_systolic (sampling_pipeline_stage_3_systolic             )                ,
     .sampling_pipeline_stage_4_send2host(sampling_pipeline_stage_4_send2host            )                ,
-    .serial2mem_ops_in_data              (serial2mem_ops_in_data                        )                      
-);
+    .serial2mem_ops_in_data             (serial2mem_ops_in_data                         )                ,       
+    .debug_handsheak                    (debug_handsheak                                )                 
+);  
 
 shiftdata #(.WIDTHx(WIDTHx),.SIZE(SIZE)) u_shiftdata_unit(
     .clock(shiftdata_clock),
@@ -416,7 +418,226 @@ assign shift_opa_out_data     = pipeline_u_im2row_col_a_matrix;
 assign shift_opb_out_data     = pipeline_u_im2row_col_b_matrix;
 assign mem2serial_pmatrix_in  = pipeline_syst_output_produc_a_b;
 
+wire [23:0] matrix_img2colA [0:5];
+wire [23:0] matrix_img2colB [0:5];
+genvar ii;
 
+generate
+    for (ii = 0; ii < 6; ii = ii + 1) begin
+        assign matrix_img2colA[ii] =
+            {>>(4){u_im2row_input_a_image[ii]}};
+    end
+endgenerate
+
+//wire [23:0] matrix_img2colB [0:5];
+
+genvar jj;
+
+generate
+    for (jj = 0; jj < 6; jj =jj + 1) begin
+        assign matrix_img2colB[jj] =
+            {>>(4){u_im2row_input_b_image[jj]}};
+    end
+endgenerate
+
+ila_1 ila_img2col (
+	.clk(clock), // input wire clk
+
+
+	.probe0 (matrix_img2colA[0] ), // input wire [7:0]  probe0  
+	.probe1 (matrix_img2colA[1] ), // input wire [7:0]  probe1 
+	.probe2 (matrix_img2colA[2] ), // input wire [7:0]  probe2 
+	.probe3 (matrix_img2colA[3] ), // input wire [7:0]  probe3 
+	.probe4 (matrix_img2colA[4] ), // input wire [7:0]  probe4 
+	.probe5 (matrix_img2colA[5] ) // input wire [7:0]  probe4 
+);
+
+ila_1 ilb_img2col (
+	.clk(clock), // input wire clk
+
+
+	.probe0 (matrix_img2colB[0] ), // input wire [7:0]  probe0  
+	.probe1 (matrix_img2colB[1] ), // input wire [7:0]  probe1 
+	.probe2 (matrix_img2colB[2] ), // input wire [7:0]  probe2 
+	.probe3 (matrix_img2colB[3] ), // input wire [7:0]  probe3 
+	.probe4 (matrix_img2colB[4] ), // input wire [7:0]  probe4 
+	.probe5 (matrix_img2colB[5] ) // input wire [7:0]  probe4 
+);
+
+
+wire [63:0] matrix_A [0:15];
+
+genvar i;
+
+generate
+    for (i = 0; i < 16; i = i + 1) begin
+        assign matrix_A[i] =
+            {>>(4){pipeline_u_im2row_col_a_matrix[i]}};
+    end
+endgenerate
+
+wire [63:0] matrix_B [0:15];
+
+genvar j;
+
+generate
+    for (j = 0; j < 16; j =j + 1) begin
+        assign matrix_B[j] =
+            {>>(4){pipeline_u_im2row_col_b_matrix[j]}};
+    end
+endgenerate
+
+//{>>(WIDTH){pmatrix_in[j_counter]}};
+ila_4 matrizes_ila0 (
+	.clk(clock), // input wire clk
+
+
+	.probe0 (matrix_A[0] ), // input wire [127:0]  probe0  
+	.probe1 (matrix_A[1] ), // input wire [127:0]  probe1 
+	.probe2 (matrix_A[2] ), // input wire [127:0]  probe2 
+	.probe3 (matrix_A[3] ), // input wire [127:0]  probe3 
+	.probe4 (matrix_A[4] ), // input wire [127:0]  probe4 
+	.probe5 (matrix_A[5] ), // input wire [127:0]  probe5 
+	.probe6 (matrix_A[6] ), // input wire [127:0]  probe6 
+	.probe7 (matrix_A[7] ), // input wire [127:0]  probe7 
+	.probe8 (matrix_A[8] ), // input wire [127:0]  probe8 
+	.probe9 (matrix_A[9] ), // input wire [127:0]  probe9 
+	.probe10(matrix_A[10]), // input wire [127:0]  probe10 
+	.probe11(matrix_A[11]), // input wire [127:0]  probe11 
+	.probe12(matrix_A[12]), // input wire [127:0]  probe12 
+	.probe13(matrix_A[13]), // input wire [127:0]  probe13 
+	.probe14(matrix_A[14]), // input wire [127:0]  probe14 
+	.probe15(matrix_A[15]) // input wire [127:0]  probe15
+);
+
+
+
+//{>>(WIDTH){pmatrix_in[j_counter]}};
+ila_4 matrizes_ila1 (
+	.clk(clock), // input wire clk
+
+
+	.probe0 (matrix_B[0] ), // input wire [127:0]  probe0  
+	.probe1 (matrix_B[1] ), // input wire [127:0]  probe1 
+	.probe2 (matrix_B[2] ), // input wire [127:0]  probe2 
+	.probe3 (matrix_B[3] ), // input wire [127:0]  probe3 
+	.probe4 (matrix_B[4] ), // input wire [127:0]  probe4 
+	.probe5 (matrix_B[5] ), // input wire [127:0]  probe5 
+	.probe6 (matrix_B[6] ), // input wire [127:0]  probe6 
+	.probe7 (matrix_B[7] ), // input wire [127:0]  probe7 
+	.probe8 (matrix_B[8] ), // input wire [127:0]  probe8 
+	.probe9 (matrix_B[9] ), // input wire [127:0]  probe9 
+	.probe10(matrix_B[10]), // input wire [127:0]  probe10 
+	.probe11(matrix_B[11]), // input wire [127:0]  probe11 
+	.probe12(matrix_B[12]), // input wire [127:0]  probe12 
+	.probe13(matrix_B[13]), // input wire [127:0]  probe13 
+	.probe14(matrix_B[14]), // input wire [127:0]  probe14 
+	.probe15(matrix_B[15]) // input wire [127:0]  probe15
+);
+
+wire [127:0] matrix_C [0:15];
+
+genvar k;
+
+generate
+    for (k = 0; k < 16; k =k + 1) begin
+        assign matrix_C[k] =
+            {>>(8){pipeline_syst_output_produc_a_b[k]}};
+    end
+endgenerate
+ila_5 matrizes_ilc1 (
+	.clk(clock), // input wire clk
+
+
+	.probe0 (matrix_C[0] ), // input wire [127:0]  probe0  
+	.probe1 (matrix_C[1] ), // input wire [127:0]  probe1 
+	.probe2 (matrix_C[2] ), // input wire [127:0]  probe2 
+	.probe3 (matrix_C[3] ), // input wire [127:0]  probe3 
+	.probe4 (matrix_C[4] ), // input wire [127:0]  probe4 
+	.probe5 (matrix_C[5] ), // input wire [127:0]  probe5 
+	.probe6 (matrix_C[6] ), // input wire [127:0]  probe6 
+	.probe7 (matrix_C[7] ), // input wire [127:0]  probe7 
+	.probe8 (matrix_C[8] ), // input wire [127:0]  probe8 
+	.probe9 (matrix_C[9] ), // input wire [127:0]  probe9 
+	.probe10(matrix_C[10]), // input wire [127:0]  probe10 
+	.probe11(matrix_C[11]), // input wire [127:0]  probe11 
+	.probe12(matrix_C[12]), // input wire [127:0]  probe12 
+	.probe13(matrix_C[13]), // input wire [127:0]  probe13 
+	.probe14(matrix_C[14]), // input wire [127:0]  probe14 
+	.probe15(matrix_C[15]), // input wire [127:0]  probe15
+	.probe16(sampling_pipeline_stage_3_systolic),
+	.probe17(debug_handsheak)
+);
+
+
+
+wire [127:0] matrix_shifta [0:15];
+
+genvar u;
+
+generate
+    for (u = 0; u < 16; u =u + 1) begin
+        assign matrix_shifta[u] =
+            {>>(8){flow_data_time_structure_OUTA[u]}};
+    end
+endgenerate
+ila_5 matrizes_ilshifta (
+	.clk(clock), // input wire clk
+
+
+	.probe0 (matrix_shifta[0] ), // input wire [127:0]  probe0  
+	.probe1 (matrix_shifta[1] ), // input wire [127:0]  probe1 
+	.probe2 (matrix_shifta[2] ), // input wire [127:0]  probe2 
+	.probe3 (matrix_shifta[3] ), // input wire [127:0]  probe3 
+	.probe4 (matrix_shifta[4] ), // input wire [127:0]  probe4 
+	.probe5 (matrix_shifta[5] ), // input wire [127:0]  probe5 
+	.probe6 (matrix_shifta[6] ), // input wire [127:0]  probe6 
+	.probe7 (matrix_shifta[7] ), // input wire [127:0]  probe7 
+	.probe8 (matrix_shifta[8] ), // input wire [127:0]  probe8 
+	.probe9 (matrix_shifta[9] ), // input wire [127:0]  probe9 
+	.probe10(matrix_shifta[10]), // input wire [127:0]  probe10 
+	.probe11(matrix_shifta[11]), // input wire [127:0]  probe11 
+	.probe12(matrix_shifta[12]), // input wire [127:0]  probe12 
+	.probe13(matrix_shifta[13]), // input wire [127:0]  probe13 
+	.probe14(matrix_shifta[14]), // input wire [127:0]  probe14 
+	.probe15(matrix_shifta[15]), // input wire [127:0]  probe15
+	.probe16(sampling_pipeline_stage_3_systolic),
+	.probe17(debug_handsheak)
+);
+
+wire [127:0] matrix_shiftb [0:15];
+
+genvar uu;
+
+generate
+    for (uu = 0; uu < 16; uu =uu + 1) begin
+        assign matrix_shiftb[uu] =
+            {>>(8){flow_data_time_structure_OUTB[uu]}};
+    end
+endgenerate
+ila_5 matrizes_ilshiftb (
+	.clk(clock), // input wire clk
+
+
+	.probe0 (matrix_shiftb[0] ), // input wire [127:0]  probe0  
+	.probe1 (matrix_shiftb[1] ), // input wire [127:0]  probe1 
+	.probe2 (matrix_shiftb[2] ), // input wire [127:0]  probe2 
+	.probe3 (matrix_shiftb[3] ), // input wire [127:0]  probe3 
+	.probe4 (matrix_shiftb[4] ), // input wire [127:0]  probe4 
+	.probe5 (matrix_shiftb[5] ), // input wire [127:0]  probe5 
+	.probe6 (matrix_shiftb[6] ), // input wire [127:0]  probe6 
+	.probe7 (matrix_shiftb[7] ), // input wire [127:0]  probe7 
+	.probe8 (matrix_shiftb[8] ), // input wire [127:0]  probe8 
+	.probe9 (matrix_shiftb[9] ), // input wire [127:0]  probe9 
+	.probe10(matrix_shiftb[10]), // input wire [127:0]  probe10 
+	.probe11(matrix_shiftb[11]), // input wire [127:0]  probe11 
+	.probe12(matrix_shiftb[12]), // input wire [127:0]  probe12 
+	.probe13(matrix_shiftb[13]), // input wire [127:0]  probe13 
+	.probe14(matrix_shiftb[14]), // input wire [127:0]  probe14 
+	.probe15(matrix_shiftb[15]), // input wire [127:0]  probe15
+	.probe16(sampling_pipeline_stage_3_systolic),
+	.probe17(debug_handsheak)
+);
 endmodule
 
 

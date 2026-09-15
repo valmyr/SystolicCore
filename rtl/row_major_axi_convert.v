@@ -45,7 +45,7 @@ module row_major_axi_convert#(parameter  BYTESIZES = 64,WIDTH=8)(
         assign m_axis_tvalid = s_axis_tvalid;
         assign s_axis_tready = m_axis_tready;
         assign m_axis_tlast = s_axis_tlast;
-       // assign {<<(WIDTH){m_axis_tdata}} = s_axis_tdata; descomente ao testar com o DMA
+        assign {<<(WIDTH){m_axis_tdata}} = s_axis_tdata;// descomente ao testar com o DMA
         
         
 
