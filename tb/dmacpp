@@ -1,0 +1,40 @@
+// Antes do DMA receber:
+Xil_DCacheInvalidateRange(
+    (UINTPTR)reseult,
+    size * size
+);
+
+XAxiDma_SimpleTransfer(
+    &AxiDma,
+    (UINTPTR)reseult,
+    size * size,
+    XAXIDMA_DEVICE_TO_DMA
+);
+
+// inicia produtor via MM2S
+XAxiDma_SimpleTransfer(
+    &AxiDma,
+    (UINTPTR)a,
+    (size2 + 4) * 4,
+    XAXIDMA_DMA_TO_DEVICE
+);
+
+// produtor terminou
+while (XAxiDma_Busy(
+    &AxiDma,
+    XAXIDMA_DMA_TO_DEVICE
+)) {
+}
+
+// espera resultado chegar completamente
+while (XAxiDma_Busy(
+    &AxiDma,
+    XAXIDMA_DEVICE_TO_DMA
+)) {
+}
+
+// CPU passa a enxergar o que o DMA escreveu
+Xil_DCacheInvalidateRange(
+    (UINTPTR)reseult,
+    size * size
+);

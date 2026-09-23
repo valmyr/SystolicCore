@@ -20,12 +20,12 @@ logic [WIDTH-1:0] out_data_reg[SIZE-1:0][SIZE-1:0]  ;
 logic [(2*SIZE)-1:0]      cnt, next_cnt                                   ;
 logic [(2*SIZE)-1:0]  cnt_shift, next_cnt_shift                       ;
 enum {IDLE, WRITE, READ,DONE}   mem_fsm,next_mem_fsm                            ;
-logic                           single_port_ram_clock                           ;
-logic                           single_port_ram_clockb                           ;
-logic                           single_port_ram_rst_n_async                          ;
+//logic                           single_port_ram_clock                           ;
+//logic                           single_port_ram_clockb                           ;
+//logic                           single_port_ram_rst_n_async                          ;
 logic                           single_port_ram_en                              ;
-logic                           single_port_ram_we                              ;
-logic [(2*SIZE)-1:0]    single_port_ram_addr                            ;
+//logic                           single_port_ram_we                              ;
+//logic [(2*SIZE)-1:0]    single_port_ram_addr                            ;
 logic next_sampling_window_debug;
 
 logic [$clog2(SIZE)-1:0] i_counter, j_counter;
@@ -39,15 +39,16 @@ logic clock_sample;
 always_ff@(posedge clock, negedge rst_n_async)begin
     if(!rst_n_async)begin
         clock_sample <= 0;
-        out_data <='{default:0};
+      //  out_data <='{default:0};
     end else begin
         clock_sample <= ~clock_sample;
-        out_data <=(cnt_shift == SIZE) ? out_data_reg: out_data ;
+       // out_data <=(cnt_shift == SIZE-1) ? out_data_reg: out_data ;
     
     end 
     
 end
  
+ assign out_data  =out_data_reg ;
 //logic [WIDTH-1:0] data_out_lin[SIZE-1:0][SIZE-1:0];
 //logic [WIDTH*SIZE-1:0] delay_1_cyclo;
    logic  [WIDTH*SIZE-1:0] single_port_ram_di_reg;
@@ -67,7 +68,7 @@ end
             mem_fsm            <= next_mem_fsm                                                                                                 ;
             cnt                <= mem_fsm != DONE ? next_cnt         :    0                                                                    ;
             cnt_shift          <= mem_fsm != DONE ? next_cnt_shift   :    0                                                                    ;
-            single_port_ram_di_reg_0 <=   in_data;
+            single_port_ram_di_reg_0 <= valid_i ?   in_data:single_port_ram_di_reg_0;
             {<<(WIDTH){out_data_reg[j_counter]}} <= mem_fsm != WRITE ?  temp:single_port_ram_di_reg_0;
             i_counter               <=  mem_fsm == WRITE? next_i_counter: 0;                                           ; 
             j_counter               <=  mem_fsm == WRITE? next_j_counter: 0;
@@ -115,7 +116,7 @@ assign             temp = {<<(WIDTH){out_data_reg[j_counter]}};
             rvalid_o                 = 0;
             next_cnt                 = uart_ready_rx_out ? (cnt_shift == SIZE-1 ? cnt + 1: cnt):cnt                        ;
             next_cnt_shift           = uart_ready_rx_out ? cnt_shift + 1: cnt_shift;
-            next_mem_fsm             = uart_ready_rx_out ? (cnt_shift != SIZE-1 ? WRITE: DONE):  mem_fsm;    
+            next_mem_fsm             =  cnt_shift != SIZE-1 ? WRITE: DONE;    
             single_port_ram_en       = 1                                     ;
             next_j_counter         =    (j_counter < SIZE  -1 )   ? j_counter +1 : j_counter;
             next_i_counter         =    (j_counter < SIZE -1)   ? i_counter:i_counter+1  ;

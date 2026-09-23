@@ -186,7 +186,7 @@ logic [WIDTHx-1:0] shift_opb_out_data[OUT_SIZE_NORM-1:0][OUT_SIZE_NORM-1:0];
 
 //---------------------------------------------------------------------------------------------------------------------------------
 //AXI
-assign uart_ready_rx_out =1;
+
 assign m_axis_tlast = mem2serial_m_axis_tlast;
 //---------------------------------------------------------------------------------------------------------------------------------
 
@@ -351,7 +351,8 @@ systolicControlUnitTop #(.SIZE(SIZE),.WIDTH(WIDTH),.BYTESIZES(BYTESIZES))u_systo
     .sampling_pipeline_stage_3_systolic (sampling_pipeline_stage_3_systolic             )                ,
     .sampling_pipeline_stage_4_send2host(sampling_pipeline_stage_4_send2host            )                ,
     .serial2mem_ops_in_data             (serial2mem_ops_in_data                         )                ,       
-    .debug_handsheak                    (debug_handsheak                                )                 
+    .debug_handsheak                    (debug_handsheak                                )                 ,
+    .uart_ready_rx_out(uart_ready_rx_out)
 );  
 
 shiftdata #(.WIDTHx(WIDTHx),.SIZE(SIZE)) u_shiftdata_unit(
@@ -425,7 +426,7 @@ genvar ii;
 generate
     for (ii = 0; ii < 6; ii = ii + 1) begin
         assign matrix_img2colA[ii] =
-            {>>(4){u_im2row_input_a_image[ii]}};
+            {>>(4){serial2mem_opa_out_data[ii]}};
     end
 endgenerate
 
@@ -436,7 +437,7 @@ genvar jj;
 generate
     for (jj = 0; jj < 6; jj =jj + 1) begin
         assign matrix_img2colB[jj] =
-            {>>(4){u_im2row_input_b_image[jj]}};
+            {>>(4){serial2mem_opb_out_data[jj]}};
     end
 endgenerate
 
@@ -449,7 +450,8 @@ ila_1 ila_img2col (
 	.probe2 (matrix_img2colA[2] ), // input wire [7:0]  probe2 
 	.probe3 (matrix_img2colA[3] ), // input wire [7:0]  probe3 
 	.probe4 (matrix_img2colA[4] ), // input wire [7:0]  probe4 
-	.probe5 (matrix_img2colA[5] ) // input wire [7:0]  probe4 
+	.probe5 (matrix_img2colA[5] ), // input wire [7:0]  probe4 
+	.probe6 (sampling_pipeline_stage_1_mem_write)
 );
 
 ila_1 ilb_img2col (
@@ -461,7 +463,8 @@ ila_1 ilb_img2col (
 	.probe2 (matrix_img2colB[2] ), // input wire [7:0]  probe2 
 	.probe3 (matrix_img2colB[3] ), // input wire [7:0]  probe3 
 	.probe4 (matrix_img2colB[4] ), // input wire [7:0]  probe4 
-	.probe5 (matrix_img2colB[5] ) // input wire [7:0]  probe4 
+	.probe5 (matrix_img2colB[5] ), // input wire [7:0]  probe4 
+    .probe6 (sampling_pipeline_stage_1_mem_write)
 );
 
 
@@ -507,7 +510,8 @@ ila_4 matrizes_ila0 (
 	.probe12(matrix_A[12]), // input wire [127:0]  probe12 
 	.probe13(matrix_A[13]), // input wire [127:0]  probe13 
 	.probe14(matrix_A[14]), // input wire [127:0]  probe14 
-	.probe15(matrix_A[15]) // input wire [127:0]  probe15
+	.probe15(matrix_A[15]), // input wire [127:0]  probe15
+	.probe16(sampling_pipeline_stage_2_img2row)
 );
 
 
@@ -532,7 +536,8 @@ ila_4 matrizes_ila1 (
 	.probe12(matrix_B[12]), // input wire [127:0]  probe12 
 	.probe13(matrix_B[13]), // input wire [127:0]  probe13 
 	.probe14(matrix_B[14]), // input wire [127:0]  probe14 
-	.probe15(matrix_B[15]) // input wire [127:0]  probe15
+	.probe15(matrix_B[15]), // input wire [127:0]  probe15
+	.probe16(sampling_pipeline_stage_2_img2row)
 );
 
 wire [127:0] matrix_C [0:15];
@@ -578,7 +583,7 @@ genvar u;
 generate
     for (u = 0; u < 16; u =u + 1) begin
         assign matrix_shifta[u] =
-            {>>(8){flow_data_time_structure_OUTA[u]}};
+            {>>(4){flow_data_time_structure_OUTA[u]}};
     end
 endgenerate
 ila_5 matrizes_ilshifta (
@@ -612,7 +617,7 @@ genvar uu;
 generate
     for (uu = 0; uu < 16; uu =uu + 1) begin
         assign matrix_shiftb[uu] =
-            {>>(8){flow_data_time_structure_OUTB[uu]}};
+            {>>(4){flow_data_time_structure_OUTB[uu]}};
     end
 endgenerate
 ila_5 matrizes_ilshiftb (

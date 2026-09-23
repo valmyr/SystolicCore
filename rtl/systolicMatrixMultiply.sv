@@ -104,7 +104,7 @@ always_comb begin
             next_ena_mac                 = 0                                                                    ;
             next_counter_transfer_m      = 0                                                                    ;
             read_done                    = 1                                                                    ;
-            ena_shift_data_next  = 1;
+            ena_shift_data_next  = 0;
         end
        LOAD_MULTI_MATRIX:begin
             ready_o                      = 0;

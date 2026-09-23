@@ -96,9 +96,9 @@ always_ff@(posedge clock, negedge rst_n_async)begin
        
     end        
 end
-
-
-assign m_axis_tlast = j_counter == SIZE -1;
+//assign m_axis_tlast =j_counter == SIZE -1;
+//Experimnetal
+assign m_axis_tlast =j_counter == SIZE -2 || j_counter == SIZE -1 || j_counter == SIZE;
 
 
 always_comb begin

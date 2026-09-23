@@ -38,17 +38,22 @@ logic  [23:0]dout_mem[LENGTH-1:0];
 
 initial begin
   clock = 1;
-  $readmemh("/run/media/xmen/3dae8433-5866-41d4-a50e-ed4d30bb9f05/home/valmyrsilva07/Área de Trabalho/SystolicCore/tb/mem8x8.mem",dout_mem);
+  $readmemh("/run/media/xmen/3dae8433-5866-41d4-a50e-ed4d30bb9f05/home/valmyrsilva07/Área de Trabalho/SystolicCore/tb/mem8x8_without_pads.hex",dout_mem);
 
   rst_n_async =1;
   #1rst_n_async= 0;
   #1rst_n_async= 1;
 end
-
+logic s_axi_t_ready;
 always #1 clock = ~clock;
 always@(posedge clock, negedge rst_n_async)begin
     if(!rst_n_async) cnt5 <= 0;
-    else cnt5<= cnt5 ==LENGTH -1?cnt5:cnt5+1;
+    else begin 
+        
+        if(s_axi_t_ready)begin
+            cnt5<= (cnt5 < 296) ? cnt5+1 : 0;
+        end
+    end
 end 
 
 
@@ -61,7 +66,7 @@ AXI_Stream_Systolic_Core #(.BYTESIZES(BYTESIZESS), .WIDTHx(WIDTHxSS),.SIZE(SIZES
 
         // Interface Slave AXI Stream (Entrada)
         .s_axis_tvalid('b1),
-        .s_axis_tready(),
+        .s_axis_tready(s_axi_t_ready),
         .s_axis_tdata(dout_mem[cnt5]),
         .s_axis_tlast(),
         // ... outros sinais opcionais como TUSER
