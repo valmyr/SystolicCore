@@ -170,6 +170,7 @@ logic [WIDTHx-1:0]      pipeline_serial2mem_opb_out_data[SIZE_WINDOW-1:0][SIZE_W
 logic [WIDTHx-1:0]      pipeline_u_im2row_col_a_matrix  [OUT_SIZE_NORM-1:0][OUT_SIZE_NORM-1:0];           
 logic [WIDTHx-1:0]      pipeline_u_im2row_col_b_matrix  [OUT_SIZE_NORM-1:0][OUT_SIZE_NORM-1:0];         
 logic [WIDTH-1:0]       pipeline_syst_output_produc_a_b  [SIZE-1:0][SIZE-1:0];
+logic [WIDTH-1:0]       pipeline_mem2serial_pmatrix_in  [SIZE-1:0][SIZE-1:0];
 
 logic sampling_pipeline_stage_1_mem_write;
 logic sampling_pipeline_stage_2_img2row  ;
@@ -219,8 +220,8 @@ assign uart_data_tx_in                 = mem2serial_smatrix_out                 
 //---------------------------------------------------------------------------------------------------------------------------------
 logic [BYTESIZES-1:0]serial2mem_ops_in_data;
 // ATRIBUIÇÂO MEMORIA A/B           
-assign serial2mem_opa_in_data = uart_data_rx_out;//: 0            ;
-assign serial2mem_opb_in_data = uart_data_rx_out;//: 0            ;uart_data_rx_out
+assign serial2mem_opa_in_data = (serial2mem_opa_valid_i) ? uart_data_rx_out: 0;//: 0            ;
+assign serial2mem_opb_in_data = (serial2mem_opb_valid_i) ? uart_data_rx_out: 0;//: 0            ;uart_data_rx_out
 
 //assign serial2mem_opa_in_data = serial2mem_ops_in_data;//: 0            ;
 //assign serial2mem_opb_in_data = serial2mem_ops_in_data;//: 0            ;uart_data_rx_out
@@ -402,13 +403,15 @@ always_ff@(posedge clock, negedge rst_n_async)begin
         pipeline_serial2mem_opb_out_data <= '{default:0};
         pipeline_u_im2row_col_a_matrix   <= '{default:0};           
         pipeline_u_im2row_col_b_matrix   <= '{default:0};         
-        pipeline_syst_output_produc_a_b   <= '{default:0};  
+        pipeline_syst_output_produc_a_b   <= '{default:0}; 
+        pipeline_mem2serial_pmatrix_in  <=  '{default:0};
     end else begin
         pipeline_serial2mem_opa_out_data <= (sampling_pipeline_stage_1_mem_write) ? serial2mem_opa_out_data : pipeline_serial2mem_opa_out_data;
         pipeline_serial2mem_opb_out_data <= (sampling_pipeline_stage_1_mem_write) ? serial2mem_opb_out_data : pipeline_serial2mem_opb_out_data;
         pipeline_u_im2row_col_a_matrix   <= (sampling_pipeline_stage_2_img2row)   ? u_im2row_col_a_matrix   : pipeline_u_im2row_col_a_matrix;
         pipeline_u_im2row_col_b_matrix   <= (sampling_pipeline_stage_2_img2row)   ? u_im2row_col_b_matrix   : pipeline_u_im2row_col_b_matrix;
         pipeline_syst_output_produc_a_b  <= (sampling_pipeline_stage_3_systolic)  ? syst_output_produc_a_b   : pipeline_syst_output_produc_a_b;
+        pipeline_mem2serial_pmatrix_in  <= (sampling_pipeline_stage_3_systolic)  ? syst_output_produc_a_b   : pipeline_mem2serial_pmatrix_in;
     end
 end
 
@@ -417,7 +420,7 @@ assign u_im2row_input_a_image = pipeline_serial2mem_opb_out_data;
 assign u_im2row_input_b_image = pipeline_serial2mem_opa_out_data;
 assign shift_opa_out_data     = pipeline_u_im2row_col_a_matrix;
 assign shift_opb_out_data     = pipeline_u_im2row_col_b_matrix;
-assign mem2serial_pmatrix_in  = pipeline_syst_output_produc_a_b;
+assign mem2serial_pmatrix_in  = pipeline_mem2serial_pmatrix_in;
 
 wire [23:0] matrix_img2colA [0:5];
 wire [23:0] matrix_img2colB [0:5];
@@ -574,75 +577,6 @@ ila_5 matrizes_ilc1 (
 	.probe17(debug_handsheak)
 );
 
-
-
-wire [127:0] matrix_shifta [0:15];
-
-genvar u;
-
-generate
-    for (u = 0; u < 16; u =u + 1) begin
-        assign matrix_shifta[u] =
-            {>>(4){flow_data_time_structure_OUTA[u]}};
-    end
-endgenerate
-ila_5 matrizes_ilshifta (
-	.clk(clock), // input wire clk
-
-
-	.probe0 (matrix_shifta[0] ), // input wire [127:0]  probe0  
-	.probe1 (matrix_shifta[1] ), // input wire [127:0]  probe1 
-	.probe2 (matrix_shifta[2] ), // input wire [127:0]  probe2 
-	.probe3 (matrix_shifta[3] ), // input wire [127:0]  probe3 
-	.probe4 (matrix_shifta[4] ), // input wire [127:0]  probe4 
-	.probe5 (matrix_shifta[5] ), // input wire [127:0]  probe5 
-	.probe6 (matrix_shifta[6] ), // input wire [127:0]  probe6 
-	.probe7 (matrix_shifta[7] ), // input wire [127:0]  probe7 
-	.probe8 (matrix_shifta[8] ), // input wire [127:0]  probe8 
-	.probe9 (matrix_shifta[9] ), // input wire [127:0]  probe9 
-	.probe10(matrix_shifta[10]), // input wire [127:0]  probe10 
-	.probe11(matrix_shifta[11]), // input wire [127:0]  probe11 
-	.probe12(matrix_shifta[12]), // input wire [127:0]  probe12 
-	.probe13(matrix_shifta[13]), // input wire [127:0]  probe13 
-	.probe14(matrix_shifta[14]), // input wire [127:0]  probe14 
-	.probe15(matrix_shifta[15]), // input wire [127:0]  probe15
-	.probe16(sampling_pipeline_stage_3_systolic),
-	.probe17(debug_handsheak)
-);
-
-wire [127:0] matrix_shiftb [0:15];
-
-genvar uu;
-
-generate
-    for (uu = 0; uu < 16; uu =uu + 1) begin
-        assign matrix_shiftb[uu] =
-            {>>(4){flow_data_time_structure_OUTB[uu]}};
-    end
-endgenerate
-ila_5 matrizes_ilshiftb (
-	.clk(clock), // input wire clk
-
-
-	.probe0 (matrix_shiftb[0] ), // input wire [127:0]  probe0  
-	.probe1 (matrix_shiftb[1] ), // input wire [127:0]  probe1 
-	.probe2 (matrix_shiftb[2] ), // input wire [127:0]  probe2 
-	.probe3 (matrix_shiftb[3] ), // input wire [127:0]  probe3 
-	.probe4 (matrix_shiftb[4] ), // input wire [127:0]  probe4 
-	.probe5 (matrix_shiftb[5] ), // input wire [127:0]  probe5 
-	.probe6 (matrix_shiftb[6] ), // input wire [127:0]  probe6 
-	.probe7 (matrix_shiftb[7] ), // input wire [127:0]  probe7 
-	.probe8 (matrix_shiftb[8] ), // input wire [127:0]  probe8 
-	.probe9 (matrix_shiftb[9] ), // input wire [127:0]  probe9 
-	.probe10(matrix_shiftb[10]), // input wire [127:0]  probe10 
-	.probe11(matrix_shiftb[11]), // input wire [127:0]  probe11 
-	.probe12(matrix_shiftb[12]), // input wire [127:0]  probe12 
-	.probe13(matrix_shiftb[13]), // input wire [127:0]  probe13 
-	.probe14(matrix_shiftb[14]), // input wire [127:0]  probe14 
-	.probe15(matrix_shiftb[15]), // input wire [127:0]  probe15
-	.probe16(sampling_pipeline_stage_3_systolic),
-	.probe17(debug_handsheak)
-);
 endmodule
 
 

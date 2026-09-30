@@ -40,6 +40,9 @@ always_ff@(posedge clock,negedge rst_n_async)begin
                 flow_data_time_structure_OPB[l] <= counter >SIZE-1 ?'{default:0}: opb_out_data_reg[counter][l];//counter > SIZE-1 ? 0 : A2_t[l][counter];
                 */
             end
+        end else begin
+                flow_data_time_structure_OPA <= '{default:0};
+                flow_data_time_structure_OPB <= '{default:0};
         end
     end
 end

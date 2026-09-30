@@ -22,8 +22,8 @@ logic [$clog2(SIZE*SIZE)-1:0] k_counter_clock_base;
 logic [$clog2(SIZE*SIZE)-1:0] next_k_counter_clock_base;
 
 
-logic [$clog2(SIZE*SIZE)-1:0] k_counter_clock_slow;
-logic [$clog2(SIZE*SIZE)-1:0] next_k_counter_clock_slow;
+
+
 logic [$clog2(SIZE)-1:0] next_i_counter, next_j_counter;
 
 
@@ -38,7 +38,6 @@ ref_clock #(.CLOCK_REF(500),.CLOCK_INPUT(100_000_000))clock_rate_pc(
 
 wire handshake;
 assign handshake = uart_valid_tx_in && event_send_data;
-logic [WIDTH-1:0]      smatrix_out2                ;
 
 /*
 always @(posedge clock or negedge rst_n_async) begin
@@ -98,7 +97,7 @@ always_ff@(posedge clock, negedge rst_n_async)begin
 end
 //assign m_axis_tlast =j_counter == SIZE -1;
 //Experimnetal
-assign m_axis_tlast =j_counter == SIZE -2 || j_counter == SIZE -1 || j_counter == SIZE;
+assign m_axis_tlast =j_counter == SIZE-1;
 
 
 always_comb begin
@@ -109,9 +108,9 @@ always_comb begin
             next_mem2seriala_fsm = valid_i  ? COUNTER_INDEX: IDLE_INDEX;
             next_i_counter =0;
             next_j_counter =0;
-            smatrix_out1  = valid_i ?'{default:8'hff}:'{default:8'h00};
+            smatrix_out1  = '{default:8'hff};
             //m_axis_tlast = valid_i;
-            next_k_counter_clock_base<=0;
+            next_k_counter_clock_base=0;
             uart_valid_tx_in = 0;   // já começa válido
            
 
@@ -119,7 +118,7 @@ always_comb begin
         end
         COUNTER_INDEX:begin
             uart_valid_tx_in =1;
-            next_k_counter_clock_base<=handshake ? k_counter_clock_base+1:k_counter_clock_base ;
+            next_k_counter_clock_base=handshake ? k_counter_clock_base+1:k_counter_clock_base ;
             ready_o = 0;
             rvalid_o = 0;
            // m_axis_tlast = 0;
@@ -144,7 +143,7 @@ always_comb begin
             next_mem2seriala_fsm = rready_i ? IDLE_INDEX : DONE_INDEX; 
             next_i_counter = 0;
             next_j_counter = 0;
-            next_k_counter_clock_base<=0;
+            next_k_counter_clock_base=0;
      
            // uart_valid_tx_in = 0;
         end
